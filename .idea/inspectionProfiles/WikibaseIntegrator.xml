@@ -25,6 +25,8 @@
           <option value="http://cxf.apache.org/schemas/" />
           <option value="http://www.wikidata.org" />
           <option value="http://wikibase.svc" />
+          <option value="http://wikiba.se" />
+          <option value="http://www.w3.org" />
         </list>
       </option>
     </inspection_tool>

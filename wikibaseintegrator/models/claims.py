@@ -124,20 +124,22 @@ class Claims(BaseModel):
 
 
 class Claim(BaseModel):
+    """
+    extend :func:`wikibaseintegrator.models.basemodel.BaseModel`
+
+    :param qualifiers:
+    :param id:
+    :param rank:
+    :param references: A References object, a list of Claim object or a list of list of Claim object
+    """
     DTYPE = 'claim'
 
-    def __init__(self, qualifiers: Qualifiers = None, rank: WikibaseRank = None, references: Union[References, List[Union[Claim, List[Claim]]]] = None) -> None:
-        """
-
-        :param qualifiers:
-        :param rank:
-        :param references: A References object, a list of Claim object or a list of list of Claim object
-        """
+    def __init__(self, qualifiers: Qualifiers = None, id: str = None, rank: WikibaseRank = None, references: Union[References, List[Union[Claim, List[Claim]]]] = None) -> None:
         self.mainsnak = Snak(datatype=self.DTYPE)
         self.type = 'statement'
         self.qualifiers = qualifiers or Qualifiers()
         self.qualifiers_order = []
-        self.id = None
+        self.id = id
         self.rank = rank or WikibaseRank.NORMAL
         self.removed = False
 
@@ -358,5 +360,5 @@ class Claim(BaseModel):
 
         return len(oldrefs) == len(newrefs) and all(any(ref_equal(oldref, newref) for oldref in oldrefs) for newref in newrefs)
 
-    def get_sparql_value(self) -> str:
+    def get_sparql_value(self) -> Optional[str]:
         pass

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from copy import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 
 import ujson
 
@@ -94,7 +94,10 @@ class BaseEntity:
         return self.__claims
 
     @claims.setter
-    def claims(self, value: Claims):
+    def claims(self, value: Union[Claim, Claims]):
+        if isinstance(value, Claim):
+            value = Claims().add(claims=value)
+
         self.__claims = value
 
     def add_claims(self, claims: Union[Claim, List], action_if_exists: ActionIfExists = ActionIfExists.APPEND) -> BaseEntity:
@@ -177,6 +180,21 @@ class BaseEntity:
         :return: A dictionary representation of the edited Entity
         """
         return self._write(data={}, clear=True, **kwargs)
+
+    def get_claims(self, property: str, login: _Login = None, allow_anonymous: bool = True, is_bot: bool = None, **kwargs: Any):
+        params = {
+            'action': 'wbgetclaims',
+            'entity': self.id,
+            'property': property,
+            'format': 'json'
+        }
+
+        login = login or self.api.login
+        is_bot = is_bot if is_bot is not None else self.api.is_bot
+
+        json_data = mediawiki_api_call_helper(data=params, login=login, allow_anonymous=allow_anonymous, is_bot=is_bot, **kwargs)
+        self.claims.from_json(json_data['claims'])
+        return self
 
     def _write(self, data: Dict = None, summary: str = None, login: _Login = None, allow_anonymous: bool = False, clear: bool = False, is_bot: bool = None, **kwargs: Any) -> Dict[
         str, Any]:
@@ -278,20 +296,19 @@ class BaseEntity:
 
             return delete_page(title=None, pageid=self.pageid, login=login, allow_anonymous=allow_anonymous, is_bot=is_bot, **kwargs)
 
-    def write_required(self, base_filter: List[BaseDataType | List[BaseDataType]] = None, action_if_exists: ActionIfExists = ActionIfExists.REPLACE, **kwargs: Any) -> bool:
+    def write_required(self, base_filter: List[BaseDataType | List[BaseDataType]], **kwargs: Any) -> bool:
         fastrun_container = wbi_fastrun.get_fastrun_container(base_filter=base_filter, **kwargs)
 
-        if base_filter is None:
-            base_filter = []
-
-        claims_to_check = []
+        pfilter: Set = set()
         for claim in self.claims:
             if claim.mainsnak.property_number in base_filter:
-                claims_to_check.append(claim)
+                pfilter.add(claim.mainsnak.property_number)
+
+        property_filter: List[str] = list(pfilter)
 
         # TODO: Add check_language_data
 
-        return fastrun_container.write_required(data=claims_to_check, cqid=self.id, action_if_exists=action_if_exists)
+        return fastrun_container.write_required(entity=self, property_filter=property_filter)
 
     def __repr__(self):
         """A mixin implementing a simple __repr__."""

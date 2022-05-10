@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class Qualifiers(BaseModel):
     def __init__(self):
-        self.qualifiers = {}
+        self.qualifiers: Dict[str, Union[Snak, Claim]] = {}
 
     @property
     def qualifiers(self):
